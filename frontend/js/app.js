@@ -284,6 +284,7 @@ function openStudioMode(mode, documentKind = null) {
     if (presContainer) presContainer.style.display = 'none';
     if (documentContainer) documentContainer.style.display = 'block';
     if (infoContainer) infoContainer.style.display = 'none';
+    if (documentKind) selectBusinessDocumentKind(documentKind);
     showBusinessDocumentView('plan');
   } else if (mode === 'post') {
     videoContainer.style.display = 'none';
@@ -297,6 +298,67 @@ function openStudioMode(mode, documentKind = null) {
     if (presContainer) presContainer.style.display = 'none';
     if (documentContainer) documentContainer.style.display = 'none';
     if (infoContainer) infoContainer.style.display = 'block';
+  }
+
+  const studio = document.getElementById('studio');
+  if (studio) studio.scrollIntoView({ behavior: 'smooth' });
+}
+
+async function generatePresentationDeck() {
+  const fileInput = document.getElementById('presFileInput');
+  const urlInput = document.getElementById('presUrlInput');
+  const promptInput = document.getElementById('presPromptInput');
+  const themeSelect = document.getElementById('presThemeSelect');
+  const statusText = document.getElementById('presStatusText');
+  const previewBox = document.getElementById('presDeckPreview');
+  const downloadGroup = document.getElementById('presDownloadGroup');
+
+  const file = fileInput ? fileInput.files[0] : null;
+  const url = urlInput ? urlInput.value.trim() : '';
+  const prompt = promptInput ? promptInput.value.trim() : '';
+  const theme = themeSelect ? themeSelect.value : 'bold_tech';
+
+  if (!file && !url && !prompt) {
+    alert('Please select a file, enter a Web URL, or type a topic request prompt.');
+    return;
+  }
+
+  if (statusText) statusText.innerText = 'Creating presentation job...';
+  if (previewBox) previewBox.innerHTML = '<div class="animate-spin text-3xl">⏳</div><div class="font-hand font-bold mt-2">AI is synthesizing slides...</div>';
+
+  try {
+    let endpoint = '/api/presentation/jobs';
+    let formData = new FormData();
+    formData.append('theme', theme);
+
+    if (file) {
+      formData.append('file', file);
+    } else if (url) {
+      endpoint = '/api/presentation/jobs/from-url';
+      formData = JSON.stringify({ url: url, theme: theme });
+    } else if (prompt) {
+      endpoint = '/api/presentation/jobs/from-prompt';
+      formData = JSON.stringify({ prompt: prompt, theme: theme });
+    }
+
+    const headers = {};
+    if (endpoint !== '/api/presentation/jobs') {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    const resp = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: headers,
+      body: formData
+    });
+
+    if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
+    const job = await resp.json();
+
+    pollPresentationJob(job.job_id);
+  } catch (err) {
+    if (statusText) statusText.innerText = `Error: ${err.message}`;
+    if (previewBox) previewBox.innerHTML = `<span class="text-red-600 font-bold">Failed to create presentation: ${err.message}</span>`;
   }
 }
 
