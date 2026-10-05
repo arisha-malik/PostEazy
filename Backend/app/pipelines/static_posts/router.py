@@ -63,17 +63,17 @@ async def run_static_post_pipeline(job_id: str, text: str, platform: Platform):
                 {{
                     "layout_type": "hook",
                     "heading": "Strong opening hook",
-                    "search_keywords": "Highly specific 3-5 word search query for a relevant stock photo (e.g., 'cascaded electronic amplifier circuit', not just 'electronics')"
+                    "search_keywords": "Simple, literal 1-2 word noun phrase that exists in a stock photo library (e.g. 'laptop', 'office meeting', 'circuit board'). DO NOT use abstract concepts or complex phrases."
                 }},
                 {{
                     "layout_type": "insight",
                     "heading": "A key takeaway from the document",
-                    "search_keywords": "Highly specific 3-5 word search query representing this exact insight in a real-world scenario"
+                    "search_keywords": "Simple, literal 1-2 word noun phrase representing a concrete object or setting for this insight."
                 }},
                 {{
                     "layout_type": "cta",
                     "heading": "Call to action",
-                    "search_keywords": "Highly specific 3-5 word search query for an image representing this exact action or growth"
+                    "search_keywords": "Simple, literal 1-2 word noun phrase (e.g. 'rocket', 'growth', 'handshake')."
                 }}
             ],
             "caption": "The social media caption text",

@@ -1559,7 +1559,8 @@ function renderPostResults(job) {
                 <div class="bg-white p-4 rounded-xl border border-charcoal/20 shadow-sm text-center">
                     <img src="${slide.rendered_image}" class="w-full rounded-md mb-3 border border-charcoal/10" style="aspect-ratio: 1/1; object-fit: cover;">
                     <h4 class="font-sketch font-bold text-lg mb-1">Slide ${idx+1}: ${slide.layout_type}</h4>
-                    <p class="font-hand text-sm text-charcoal/80">${slide.heading}</p>
+                    <p class="font-hand text-sm text-charcoal/80 mb-3">${slide.heading}</p>
+                    <a href="${slide.rendered_image}" target="_blank" download="slide_${idx+1}.jpg" class="inline-block text-xs px-3 py-1.5 bg-paper-tint border border-charcoal rounded-full hover:bg-moss/20 font-bold">⬇️ Download Slide</a>
                 </div>
             `;
         });
