@@ -1449,7 +1449,7 @@ async function checkJobStatus(jobId, apiPrefix, onDone) {
 
     if (job.status === 'done' || job.status === 'failed') {
       if (job.status === 'done' && job.script) {
-        onDone(job.script);
+        onDone(job);
       }
       return true; // stop polling
     }
@@ -1483,8 +1483,8 @@ async function startPostRender() {
     const job = await res.json();
     
     let pollInterval = setInterval(async () => {
-        const isDone = await checkJobStatus(job.job_id, 'posts', (script) => {
-            renderPostResults(script);
+        const isDone = await checkJobStatus(job.job_id, 'posts', (completedJob) => {
+            renderPostResults(completedJob);
         });
         if(isDone) {
             clearInterval(pollInterval);
@@ -1526,8 +1526,8 @@ async function startInfographicRender() {
     const job = await res.json();
     
     let pollInterval = setInterval(async () => {
-        const isDone = await checkJobStatus(job.job_id, 'infographics', (script) => {
-            renderInfoResults(script);
+        const isDone = await checkJobStatus(job.job_id, 'infographics', (completedJob) => {
+            renderInfoResults(completedJob);
         });
         if(isDone) {
             clearInterval(pollInterval);
@@ -1547,7 +1547,8 @@ async function startInfographicRender() {
   }
 }
 
-function renderPostResults(script) {
+function renderPostResults(job) {
+    const script = job.script;
     document.getElementById('postPreviewSection').style.display = 'block';
     const box = document.getElementById('postPreviewBox');
     box.innerHTML = '';
@@ -1568,9 +1569,19 @@ function renderPostResults(script) {
     if (script.caption) captionHtml += `<p class="mb-2">${script.caption}</p>`;
     if (script.hashtags) captionHtml += `<p class="text-terracotta">${script.hashtags.map(h => '#'+h.replace('#','')).join(' ')}</p>`;
     document.getElementById('postCaptionBox').innerHTML = captionHtml;
+
+    const downloadWrapper = document.getElementById('postDownloadWrapper');
+    if (downloadWrapper) {
+        downloadWrapper.innerHTML = `
+          <a href="${API_BASE}/api/posts/jobs/${job.job_id}/download" download class="btn-bounce px-8 py-3 bg-charcoal text-white font-sketch text-xl font-bold rounded-xl shadow-sketch inline-block mt-4">
+            📦 Download ZIP / PDF
+          </a>
+        `;
+    }
 }
 
-function renderInfoResults(script) {
+function renderInfoResults(job) {
+    const script = job.script;
     document.getElementById('infoPreviewSection').style.display = 'block';
     const box = document.getElementById('infoPreviewBox');
     box.innerHTML = '';
