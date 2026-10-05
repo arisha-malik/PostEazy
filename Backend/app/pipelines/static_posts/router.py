@@ -14,6 +14,9 @@ from app.jobs import job_store
 from app.presets import get_preset
 from app.core.pipeline_logging import log_pipeline_event
 
+from dotenv import load_dotenv
+load_dotenv()
+
 router = APIRouter(prefix="/api/posts", tags=["Pipeline A: Static Posts"])
 
 async def search_pixabay_image(query: str) -> str:

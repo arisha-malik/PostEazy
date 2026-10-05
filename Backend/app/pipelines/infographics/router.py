@@ -15,6 +15,9 @@ from app.schemas import JobStatus, JobState
 from app.jobs import job_store
 from app.config import settings
 
+from dotenv import load_dotenv
+load_dotenv()
+
 router = APIRouter(prefix="/api/infographics", tags=["Pipeline D: Infographics"])
 
 def render_chart_to_base64(chart_data: dict) -> str:
