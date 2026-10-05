@@ -285,6 +285,22 @@
         </button>
       </div>
 
+            <!-- Option 4: Create Infographic -->
+      <div class="relative bg-paper-card border-doodle-card p-6 shadow-sketch-lg hover:shadow-sketch transition-all cursor-pointer group flex flex-col justify-between" onclick="openStudioMode('infographic')">
+        <div class="washi-tape-right"></div>
+        <div class="pt-2">
+          <span class="px-2.5 py-0.5 bg-terracotta/20 text-terracotta-dark font-hand text-xs font-bold rounded-md border border-terracotta/30 uppercase tracking-wider">Data Visualization</span>
+          <h3 class="font-sketch text-2xl font-bold text-charcoal mt-2 mb-2">Create Infographic</h3>
+          <p class="font-hand text-sm text-charcoal/80 leading-relaxed mb-6">
+            Extract data and statistics from your documents into beautiful, ready-to-publish infographic charts.
+          </p>
+        </div>
+        <button class="btn-bounce w-full py-3 text-charcoal font-sketch text-lg font-bold rounded-xl border-2 border-charcoal shadow-sketch flex items-center justify-center gap-2 hover:bg-terracotta/10" style="background: #ffffff; border: 2px solid #322d29; color: #322d29 !important;">
+          <span>Launch Infographic Studio</span>
+          <span class="text-xl">➔</span>
+        </button>
+      </div>
+
       <!-- Option 3: Create Presentation -->
       <div class="relative bg-paper-card border-doodle-card p-6 shadow-sketch-lg hover:shadow-sketch transition-all cursor-pointer group flex flex-col justify-between" onclick="openStudioMode('presentation')">
         <div class="washi-tape-left"></div>
@@ -885,25 +901,73 @@
     </div>
 
     <!-- DEDICATED POST GENERATION STUDIO CONTAINER -->
-    <div id="postStudioContainer" style="display: none;" class="w-full max-w-5xl mx-auto">
-      <div class="bg-paper-card border-doodle-card p-8 shadow-sketch-lg text-center">
-        <button class="px-4 py-1.5 rounded-full border-2 border-charcoal bg-white font-sketch text-base font-bold shadow-sketch-sm hover:bg-paper-tint mb-6" onclick="backToStudioChoice()">
-          ◀ Back to Home
-        </button>
-        <h2 class="font-sketch text-3xl font-bold text-charcoal mb-2">Post Generation Studio</h2>
-        <p class="font-hand text-lg text-charcoal/80 max-w-md mx-auto mb-6">
-          Upload your whitepaper or document to generate multi-slide carousel posts and infographics.
-        </p>
-        <div class="p-8 border-dashed-doodle bg-paper-tint/40 max-w-lg mx-auto">
-          <input type="file" id="postFileInput" class="hidden">
-          <button class="px-6 py-3 bg-moss text-white font-sketch text-xl font-bold rounded-xl border-2 border-charcoal shadow-sketch" onclick="document.getElementById('postFileInput').click()">
-            Upload Document for Carousel Post
-          </button>
+    <div id="postStudioContainer" style="display: none;" class="w-full max-w-6xl mx-auto">
+      <div class="bg-paper-card border-doodle-card p-6 sm:p-8 shadow-sketch-lg">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <button class="px-4 py-1.5 rounded-full border-2 border-charcoal bg-white font-sketch text-base font-bold shadow-sketch-sm hover:bg-paper-tint" onclick="backToStudioChoice()">◀ Back to Home</button>
+          <div class="px-4 py-1 rounded-full border-2 border-charcoal bg-white shadow-sketch-sm"><span class="font-sketch text-lg font-bold text-charcoal">Post Generation Studio</span></div>
         </div>
+        <section class="relative bg-paper-card border-doodle-card p-6 sm:p-8 shadow-sketch-lg">
+          <div class="washi-tape-top"></div>
+          <h2 class="font-sketch text-2xl sm:text-3xl font-bold text-charcoal mt-1">Create LinkedIn / Instagram Carousel</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            <button type="button" id="pPlatLinkedin" onclick="selectPostPlatform('linkedin')" class="text-left p-5 rounded-2xl border-2 border-charcoal bg-moss-surface ring-4 ring-terracotta"><span class="block font-sketch text-xl font-bold">LinkedIn</span></button>
+            <button type="button" id="pPlatInstagram" onclick="selectPostPlatform('instagram')" class="text-left p-5 rounded-2xl border-2 border-charcoal bg-white"><span class="block font-sketch text-xl font-bold">Instagram</span></button>
+          </div>
+          <div class="mt-6 p-8 border-dashed-doodle bg-paper-tint/40 max-w-lg mx-auto text-center">
+            <input type="file" id="postFileInput" class="hidden" onchange="handlePostFileSelect(event)">
+            <button class="px-6 py-3 bg-moss text-white font-sketch text-xl font-bold rounded-xl border-2 border-charcoal shadow-sketch" onclick="document.getElementById('postFileInput').click()">Select Document</button>
+            <p id="postFileName" class="mt-4 font-hand text-charcoal font-bold"></p>
+          </div>
+          <div class="mt-7 pt-4 border-t-2 border-dashed border-charcoal/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <span id="postStatusText" class="font-hand text-sm text-charcoal/75"></span>
+            <button type="button" id="btnGenPost" onclick="startPostRender()" class="btn-bounce px-7 py-3 bg-gradient-to-r from-moss via-[#64845b] to-terracotta text-white font-sketch text-xl font-bold rounded-xl border-2 border-charcoal shadow-sketch">Generate Post ➔</button>
+          </div>
+        </section>
+        <section id="postPreviewSection" style="display: none;" class="mt-8 relative bg-paper-card border-doodle-card p-6 sm:p-8 shadow-sketch-lg">
+            <div class="washi-tape-top"></div>
+            <h2 class="font-sketch text-2xl font-bold text-charcoal">Generated Slides</h2>
+            <div id="postPreviewBox" class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6"></div>
+            <div class="mt-6 p-4 bg-paper-tint rounded-xl border border-charcoal/20">
+                <h3 class="font-bold font-sketch text-xl mb-2">Caption</h3>
+                <p id="postCaptionBox" class="font-hand"></p>
+            </div>
+            <div class="mt-6 text-center" id="postDownloadWrapper">
+                <!-- Downloads inserted here -->
+            </div>
+        </section>
       </div>
     </div>
 
-    <!-- DEDICATED BUSINESS DOCUMENT STUDIO CONTAINER -->
+    <!-- DEDICATED INFOGRAPHIC STUDIO CONTAINER -->
+    <div id="infographicStudioContainer" style="display: none;" class="w-full max-w-6xl mx-auto">
+      <div class="bg-paper-card border-doodle-card p-6 sm:p-8 shadow-sketch-lg">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <button class="px-4 py-1.5 rounded-full border-2 border-charcoal bg-white font-sketch text-base font-bold shadow-sketch-sm hover:bg-paper-tint" onclick="backToStudioChoice()">◀ Back to Home</button>
+          <div class="px-4 py-1 rounded-full border-2 border-charcoal bg-white shadow-sketch-sm"><span class="font-sketch text-lg font-bold text-charcoal">Infographic Studio</span></div>
+        </div>
+        <section class="relative bg-paper-card border-doodle-card p-6 sm:p-8 shadow-sketch-lg">
+          <div class="washi-tape-top"></div>
+          <h2 class="font-sketch text-2xl sm:text-3xl font-bold text-charcoal mt-1">Extract Data to Infographics</h2>
+          <div class="mt-6 p-8 border-dashed-doodle bg-paper-tint/40 max-w-lg mx-auto text-center">
+            <input type="file" id="infoFileInput" class="hidden" onchange="handleInfoFileSelect(event)">
+            <button class="px-6 py-3 bg-terracotta text-white font-sketch text-xl font-bold rounded-xl border-2 border-charcoal shadow-sketch" onclick="document.getElementById('infoFileInput').click()">Select Document</button>
+            <p id="infoFileName" class="mt-4 font-hand text-charcoal font-bold"></p>
+          </div>
+          <div class="mt-7 pt-4 border-t-2 border-dashed border-charcoal/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <span id="infoStatusText" class="font-hand text-sm text-charcoal/75"></span>
+            <button type="button" id="btnGenInfo" onclick="startInfographicRender()" class="btn-bounce px-7 py-3 bg-gradient-to-r from-[#d96645] to-terracotta text-white font-sketch text-xl font-bold rounded-xl border-2 border-charcoal shadow-sketch">Generate Infographic ➔</button>
+          </div>
+        </section>
+        <section id="infoPreviewSection" style="display: none;" class="mt-8 relative bg-paper-card border-doodle-card p-6 sm:p-8 shadow-sketch-lg">
+            <div class="washi-tape-top"></div>
+            <h2 class="font-sketch text-2xl font-bold text-charcoal">Generated Charts</h2>
+            <div id="infoPreviewBox" class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6"></div>
+        </section>
+      </div>
+    </div>
+
+<!-- DEDICATED BUSINESS DOCUMENT STUDIO CONTAINER -->
     <div id="businessDocumentStudioContainer" style="display: none;" class="w-full max-w-6xl mx-auto">
       <div class="bg-paper-card border-doodle-card p-6 sm:p-8 shadow-sketch-lg">
         <div class="flex items-center justify-between mb-6 flex-wrap gap-3">

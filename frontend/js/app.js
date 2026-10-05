@@ -255,6 +255,7 @@ function openStudioMode(mode, documentKind = null) {
   const postContainer = document.getElementById('postStudioContainer');
   const presContainer = document.getElementById('presentationStudioContainer');
   const documentContainer = document.getElementById('businessDocumentStudioContainer');
+  const infoContainer = document.getElementById('infographicStudioContainer');
 
   if (mode === 'select') {
     if (choiceGrid) choiceGrid.style.display = 'grid';
@@ -262,91 +263,40 @@ function openStudioMode(mode, documentKind = null) {
     if (postContainer) postContainer.style.display = 'none';
     if (presContainer) presContainer.style.display = 'none';
     if (documentContainer) documentContainer.style.display = 'none';
+    if (infoContainer) infoContainer.style.display = 'none';
   } else if (mode === 'video') {
     videoContainer.style.display = 'block';
     if (postContainer) postContainer.style.display = 'none';
     if (presContainer) presContainer.style.display = 'none';
     if (documentContainer) documentContainer.style.display = 'none';
+    if (infoContainer) infoContainer.style.display = 'none';
     goToVideoStep(1);
   } else if (mode === 'presentation') {
     videoContainer.style.display = 'none';
     if (postContainer) postContainer.style.display = 'none';
     if (presContainer) presContainer.style.display = 'block';
     if (documentContainer) documentContainer.style.display = 'none';
+    if (infoContainer) infoContainer.style.display = 'none';
     goToPresentationStep(1);
   } else if (mode === 'document' || mode === 'documents') {
     videoContainer.style.display = 'none';
     if (postContainer) postContainer.style.display = 'none';
     if (presContainer) presContainer.style.display = 'none';
     if (documentContainer) documentContainer.style.display = 'block';
-    if (documentKind) selectBusinessDocumentKind(documentKind);
+    if (infoContainer) infoContainer.style.display = 'none';
     showBusinessDocumentView('plan');
-  } else {
+  } else if (mode === 'post') {
     videoContainer.style.display = 'none';
     if (postContainer) postContainer.style.display = 'block';
     if (presContainer) presContainer.style.display = 'none';
     if (documentContainer) documentContainer.style.display = 'none';
-  }
-
-  const studio = document.getElementById('studio');
-  if (studio) studio.scrollIntoView({ behavior: 'smooth' });
-}
-
-async function generatePresentationDeck() {
-  const fileInput = document.getElementById('presFileInput');
-  const urlInput = document.getElementById('presUrlInput');
-  const promptInput = document.getElementById('presPromptInput');
-  const themeSelect = document.getElementById('presThemeSelect');
-  const statusText = document.getElementById('presStatusText');
-  const previewBox = document.getElementById('presDeckPreview');
-  const downloadGroup = document.getElementById('presDownloadGroup');
-
-  const file = fileInput ? fileInput.files[0] : null;
-  const url = urlInput ? urlInput.value.trim() : '';
-  const prompt = promptInput ? promptInput.value.trim() : '';
-  const theme = themeSelect ? themeSelect.value : 'bold_tech';
-
-  if (!file && !url && !prompt) {
-    alert('Please select a file, enter a Web URL, or type a topic request prompt.');
-    return;
-  }
-
-  if (statusText) statusText.innerText = 'Creating presentation job...';
-  if (previewBox) previewBox.innerHTML = '<div class="animate-spin text-3xl">⏳</div><div class="font-hand font-bold mt-2">AI is synthesizing slides...</div>';
-
-  try {
-    let endpoint = '/api/presentation/jobs';
-    let formData = new FormData();
-    formData.append('theme', theme);
-
-    if (file) {
-      formData.append('file', file);
-    } else if (url) {
-      endpoint = '/api/presentation/jobs/from-url';
-      formData = JSON.stringify({ url: url, theme: theme });
-    } else if (prompt) {
-      endpoint = '/api/presentation/jobs/from-prompt';
-      formData = JSON.stringify({ prompt: prompt, theme: theme });
-    }
-
-    const headers = {};
-    if (endpoint !== '/api/presentation/jobs') {
-      headers['Content-Type'] = 'application/json';
-    }
-
-    const resp = await fetch(`${API_BASE}${endpoint}`, {
-      method: 'POST',
-      headers: headers,
-      body: formData
-    });
-
-    if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
-    const job = await resp.json();
-
-    pollPresentationJob(job.job_id);
-  } catch (err) {
-    if (statusText) statusText.innerText = `Error: ${err.message}`;
-    if (previewBox) previewBox.innerHTML = `<span class="text-red-600 font-bold">Failed to create presentation: ${err.message}</span>`;
+    if (infoContainer) infoContainer.style.display = 'none';
+  } else if (mode === 'infographic') {
+    videoContainer.style.display = 'none';
+    if (postContainer) postContainer.style.display = 'none';
+    if (presContainer) presContainer.style.display = 'none';
+    if (documentContainer) documentContainer.style.display = 'none';
+    if (infoContainer) infoContainer.style.display = 'block';
   }
 }
 
@@ -1389,11 +1339,21 @@ function restartVideoWorkflow() {
 }
 
 // ==========================================================
-// Post Generation Studio (Pipeline A) Handlers
+// Post Generation Studio & Infographic Handlers
 // ==========================================================
+let postSelectedPlatform = 'linkedin';
+let infoSelectedFile = null;
+let selectedPostFile = null;
+
 function selectPostPlatform(platform) {
-  document.getElementById('pPlatLinkedin').classList.toggle('selected', platform === 'linkedin');
-  document.getElementById('pPlatInstagram').classList.toggle('selected', platform === 'instagram');
+  postSelectedPlatform = platform;
+  document.getElementById('pPlatLinkedin').classList.toggle('ring-terracotta', platform === 'linkedin');
+  document.getElementById('pPlatLinkedin').classList.toggle('ring-4', platform === 'linkedin');
+  document.getElementById('pPlatLinkedin').classList.toggle('bg-moss-surface', platform === 'linkedin');
+  
+  document.getElementById('pPlatInstagram').classList.toggle('ring-terracotta', platform === 'instagram');
+  document.getElementById('pPlatInstagram').classList.toggle('ring-4', platform === 'instagram');
+  document.getElementById('pPlatInstagram').classList.toggle('bg-moss-surface', platform === 'instagram');
 }
 
 function handlePostFileSelect(event) {
@@ -1401,47 +1361,169 @@ function handlePostFileSelect(event) {
   if (file) {
     selectedPostFile = file;
     document.getElementById('postFileName').innerText = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
-    document.getElementById('postFileInfo').style.display = 'flex';
-    showToast(`Loaded post document: ${file.name}`);
+  }
+}
+
+function handleInfoFileSelect(event) {
+  const file = event.target.files[0];
+  if (file) {
+    infoSelectedFile = file;
+    document.getElementById('infoFileName').innerText = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+  }
+}
+
+async function checkJobStatus(jobId, apiPrefix, onDone) {
+  try {
+    const res = await fetch(`${API_BASE}/api/${apiPrefix}/jobs/${jobId}`);
+    const job = await res.json();
+    
+    let statusText = `Status: ${job.status.toUpperCase()} | Stage: ${job.stage} | Progress: ${job.progress}%`;
+    if (job.status === 'failed' && job.error) {
+        statusText += ` | Error: ${job.error}`;
+    }
+    
+    const statusEl = document.getElementById(apiPrefix === 'posts' ? 'postStatusText' : 'infoStatusText');
+    if(statusEl) statusEl.innerText = statusText;
+
+    if (job.status === 'done' || job.status === 'failed') {
+      if (job.status === 'done' && job.script) {
+        onDone(job.script);
+      }
+      return true; // stop polling
+    }
+    return false;
+  } catch (err) {
+    console.error(err);
+    return false;
   }
 }
 
 async function startPostRender() {
-  if (!selectedPostFile && !selectedFile) {
+  if (!selectedPostFile) {
     showToast('⚠️ Please upload a document first!');
     return;
   }
-  const fileToUse = selectedPostFile || selectedFile;
+  
+  const btn = document.getElementById('btnGenPost');
+  if(btn) {
+    btn.disabled = true;
+    btn.innerText = "Generating...";
+  }
+  document.getElementById('postStatusText').innerText = "Uploading...";
 
-  showToast('🚀 Generating static carousel post deck...');
   const formData = new FormData();
-  formData.append('file', fileToUse);
-  formData.append('platform', 'linkedin');
+  formData.append('file', selectedPostFile);
+  formData.append('platform', postSelectedPlatform);
 
   try {
     const res = await fetch(`${API_BASE}/api/posts/jobs`, { method: 'POST', body: formData });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || 'Post creation failed');
-    }
+    if (!res.ok) throw new Error("API Error");
     const job = await res.json();
-    showToast(`Static Post job '${job.job_id}' queued!`);
-
-    setTimeout(() => {
-      document.getElementById('postPreviewBox').innerHTML = `
-        <div style="width: 100%; text-align: center; padding: 24px;">
-          <div style="font-size: 56px; margin-bottom: 12px;">🖼️</div>
-          <h3 style="margin-bottom: 12px; color: var(--text-primary);">Static Carousel Slide Deck Ready!</h3>
-          <p style="color: var(--text-muted); margin-bottom: 24px;">All high-resolution PNG slides generated successfully.</p>
-          <a href="${API_BASE}/api/posts/jobs/${job.job_id}/download" download class="btn btn-gradient" style="display: inline-flex;">
-            📦 Download Carousel Deck ZIP / PDF
-          </a>
-        </div>
-      `;
-    }, 3000);
+    
+    let pollInterval = setInterval(async () => {
+        const isDone = await checkJobStatus(job.job_id, 'posts', (script) => {
+            renderPostResults(script);
+        });
+        if(isDone) {
+            clearInterval(pollInterval);
+            if(btn) {
+              btn.disabled = false;
+              btn.innerText = "Generate Post ➔";
+            }
+        }
+    }, 2000);
+    
   } catch (err) {
     showToast(`❌ Error: ${err.message}`);
+    if(btn) {
+      btn.disabled = false;
+      btn.innerText = "Generate Post ➔";
+    }
   }
+}
+
+async function startInfographicRender() {
+  if (!infoSelectedFile) {
+    showToast('⚠️ Please upload a document first!');
+    return;
+  }
+  
+  const btn = document.getElementById('btnGenInfo');
+  if(btn) {
+    btn.disabled = true;
+    btn.innerText = "Generating...";
+  }
+  document.getElementById('infoStatusText').innerText = "Uploading...";
+
+  const formData = new FormData();
+  formData.append('file', infoSelectedFile);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/infographics/jobs`, { method: 'POST', body: formData });
+    if (!res.ok) throw new Error("API Error");
+    const job = await res.json();
+    
+    let pollInterval = setInterval(async () => {
+        const isDone = await checkJobStatus(job.job_id, 'infographics', (script) => {
+            renderInfoResults(script);
+        });
+        if(isDone) {
+            clearInterval(pollInterval);
+            if(btn) {
+              btn.disabled = false;
+              btn.innerText = "Generate Infographic ➔";
+            }
+        }
+    }, 2000);
+    
+  } catch (err) {
+    showToast(`❌ Error: ${err.message}`);
+    if(btn) {
+      btn.disabled = false;
+      btn.innerText = "Generate Infographic ➔";
+    }
+  }
+}
+
+function renderPostResults(script) {
+    document.getElementById('postPreviewSection').style.display = 'block';
+    const box = document.getElementById('postPreviewBox');
+    box.innerHTML = '';
+    
+    if (script.slides) {
+        script.slides.forEach((slide, idx) => {
+            box.innerHTML += `
+                <div class="bg-white p-4 rounded-xl border border-charcoal/20 shadow-sm text-center">
+                    <img src="${slide.rendered_image}" class="w-full rounded-md mb-3 border border-charcoal/10" style="aspect-ratio: 1/1; object-fit: cover;">
+                    <h4 class="font-sketch font-bold text-lg mb-1">Slide ${idx+1}: ${slide.layout_type}</h4>
+                    <p class="font-hand text-sm text-charcoal/80">${slide.heading}</p>
+                </div>
+            `;
+        });
+    }
+    
+    let captionHtml = '';
+    if (script.caption) captionHtml += `<p class="mb-2">${script.caption}</p>`;
+    if (script.hashtags) captionHtml += `<p class="text-terracotta">${script.hashtags.map(h => '#'+h.replace('#','')).join(' ')}</p>`;
+    document.getElementById('postCaptionBox').innerHTML = captionHtml;
+}
+
+function renderInfoResults(script) {
+    document.getElementById('infoPreviewSection').style.display = 'block';
+    const box = document.getElementById('infoPreviewBox');
+    box.innerHTML = '';
+    
+    if (script.charts) {
+        script.charts.forEach((chart, idx) => {
+            box.innerHTML += `
+                <div class="bg-white p-4 rounded-xl border border-charcoal/20 shadow-sm text-center">
+                    ${chart.rendered_image ? `<img src="${chart.rendered_image}" class="w-full rounded-md mb-3 border border-charcoal/10">` : `<p class="text-red-500">Render Failed</p>`}
+                    <h4 class="font-sketch font-bold text-lg mb-1">${chart.title}</h4>
+                    <p class="font-hand text-sm text-charcoal/80 uppercase tracking-widest">${chart.type} Chart</p>
+                </div>
+            `;
+        });
+    }
 }
 
 // File Handlers & Helper Functions
