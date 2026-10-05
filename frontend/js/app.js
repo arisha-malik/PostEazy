@@ -1405,7 +1405,7 @@ function restartVideoWorkflow() {
 // ==========================================================
 let postSelectedPlatform = 'linkedin';
 let infoSelectedFile = null;
-let selectedPostFile = null;
+
 
 function selectPostPlatform(platform) {
   postSelectedPlatform = platform;
