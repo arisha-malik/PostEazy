@@ -1793,7 +1793,7 @@ function preloadCinematicFrames() {
 function initCinematicHeroScroll() {
   preloadCinematicFrames();
 
-  const runway = document.getElementById('hero-runway');
+  const runway = document.getElementById('hero');
   const canvas = document.getElementById('cinematicHeroCanvas');
   const video = document.getElementById('heroCinematicVideo');
   const typography = document.getElementById('heroCinematicTypography');
