@@ -1,6 +1,12 @@
 import asyncio
+import os
+import uuid
+import json
+import urllib.parse
+import httpx
 from typing import Optional
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status, BackgroundTasks, Depends
+from google import genai
 
 from app.schemas import Platform, JobStatus, StaticPostScript, JobState
 from app.services.ingest import extract_document_text
@@ -10,44 +16,89 @@ from app.core.pipeline_logging import log_pipeline_event
 
 router = APIRouter(prefix="/api/posts", tags=["Pipeline A: Static Posts"])
 
+async def search_pixabay_image(query: str) -> str:
+    """
+    Searches Pixabay for a relevant stock photo using a short keyword query.
+    Requires PIXABAY_API_KEY in .env.
+    """
+    api_key = os.getenv("PIXABAY_API_KEY", "").strip()
+    if not api_key:
+        return f"https://dummyimage.com/1080x1080/2a2a40/ffffff&text=Missing+Pixabay+Key"
+        
+    encoded_query = urllib.parse.quote(query)
+    url = f"https://pixabay.com/api/?key={api_key}&q={encoded_query}&image_type=photo&orientation=horizontal&safesearch=true&per_page=3"
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+            data = response.json()
+            if data.get("hits") and len(data["hits"]) > 0:
+                # Return the large image URL from the first result
+                return data["hits"][0].get("largeImageURL", data["hits"][0].get("webformatURL"))
+    except Exception as e:
+        print(f"Pixabay search failed: {e}")
+        
+    return f"https://dummyimage.com/1080x1080/2a2a40/ffffff&text=No+Image+Found"
+
 async def run_static_post_pipeline(job_id: str, text: str, platform: Platform):
     try:
         log_pipeline_event("static_posts", "pipeline_started", job_id=job_id, platform=platform.value, source_chars=len(text))
-        # Stage 1: Parsed
+        
         job_store.update_job(job_id, status=JobState.RUNNING, stage="distilling_insights", progress=30)
-        await asyncio.sleep(1.5)
-
+        
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         preset = get_preset(platform)
-        script_data = {
-            "title": "Static Carousel Output",
+        
+        prompt = f"""You are an expert social media manager. Analyze this document.
+        Create a highly engaging static carousel post script specifically for {platform}. 
+        The tone should match: {preset.name}.
+        
+        You MUST return ONLY a raw JSON object exactly matching this structure. Do NOT wrap it in ```json blocks or backticks:
+        {{
+            "title": "A catchy title for the post",
             "slides": [
-                {
+                {{
                     "layout_type": "hook",
-                    "heading": "Transform Dense Docs Into Social Media Content",
-                    "body": "Stop wasting hours rewriting decks and PDFs.",
-                    "stat": None
-                },
-                {
+                    "heading": "Strong opening hook",
+                    "search_keywords": "Highly specific 3-5 word search query for a relevant stock photo (e.g., 'cascaded electronic amplifier circuit', not just 'electronics')"
+                }},
+                {{
                     "layout_type": "insight",
-                    "heading": "Automated Content Pipelines",
-                    "body": text[:180] + "...",
-                    "stat": "85%"
-                },
-                {
+                    "heading": "A key takeaway from the document",
+                    "search_keywords": "Highly specific 3-5 word search query representing this exact insight in a real-world scenario"
+                }},
+                {{
                     "layout_type": "cta",
-                    "heading": "Ready to scale your content?",
-                    "body": "Follow for daily high-impact breakdowns.",
-                    "stat": None
-                }
+                    "heading": "Call to action",
+                    "search_keywords": "Highly specific 3-5 word search query for an image representing this exact action or growth"
+                }}
             ],
-            "caption": f"Generated caption tuned for {preset.name} voice.",
-            "hashtags": ["content", "innovation", "insights", "tech", "growth"]
-        }
+            "caption": "The social media caption text",
+            "hashtags": ["hashtag1", "hashtag2"]
+        }}
+        """
+        
+        response = await asyncio.to_thread(
+            client.models.generate_content,
+            model=os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
+            contents=[text, prompt]
+        )
+        
+        clean_json_str = response.text.replace('```json', '').replace('```', '').strip()
+        script_data = json.loads(clean_json_str)
 
-        # Stage 2: Slide Rendering
+        # Stage 2: Slide Rendering using Pixabay
         job_store.update_job(job_id, stage="rendering_slides", progress=70, script=script_data)
         log_pipeline_event("static_posts", "script_ready", job_id=job_id, slides=len(script_data["slides"]), preset=preset.name)
-        await asyncio.sleep(2.0)
+        
+        generated_slides = []
+        for i, slide in enumerate(script_data["slides"]):
+            query = slide.get("search_keywords", "abstract")
+            image_url = await search_pixabay_image(query)
+            slide["rendered_image"] = image_url
+            generated_slides.append(slide)
+            
+        script_data["slides"] = generated_slides
 
         # Stage 3: Done
         output_urls = {
@@ -58,7 +109,8 @@ async def run_static_post_pipeline(job_id: str, text: str, platform: Platform):
             status=JobState.DONE,
             stage="done",
             progress=100,
-            output_urls=output_urls
+            output_urls=output_urls,
+            script=script_data
         )
         log_pipeline_event("static_posts", "pipeline_completed", job_id=job_id, output_formats=["download"])
     except Exception as e:
@@ -70,34 +122,7 @@ async def generate_post_script(
     file: UploadFile = File(...),
     platform: Platform = Form(Platform.LINKEDIN)
 ):
-    doc_res = await extract_document_text(file)
-    preset = get_preset(platform)
-
-    return StaticPostScript(
-        title=f"Static Carousel for {doc_res.filename}",
-        slides=[
-            {
-                "layout_type": "hook",
-                "heading": "Transform Dense Docs Into Social Media Content",
-                "body": "Stop wasting hours rewriting decks and PDFs.",
-                "stat": None
-            },
-            {
-                "layout_type": "insight",
-                "heading": "Automated Content Pipelines",
-                "body": doc_res.text[:180] + "...",
-                "stat": "85%"
-            },
-            {
-                "layout_type": "cta",
-                "heading": "Ready to scale your content?",
-                "body": "Follow for daily high-impact breakdowns.",
-                "stat": None
-            }
-        ],
-        caption=f"Generated caption tuned for {preset.name} voice.",
-        hashtags=["content", "innovation", "insights", "tech", "growth"]
-    )
+    raise HTTPException(status_code=501, detail="Use /jobs instead.")
 
 @router.post("/jobs", response_model=JobStatus, status_code=status.HTTP_202_ACCEPTED)
 async def create_static_post_job(

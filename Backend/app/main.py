@@ -16,6 +16,7 @@ from app.pipelines.static_posts.router import router as static_posts_router
 from app.pipelines.faceless_video.router import router as faceless_video_router
 from app.pipelines.presentation.router import router as presentation_router
 from app.pipelines.business_documents.router import router as business_documents_router
+from app.pipelines.infographics.router import router as infographics_router
 from app.services.media import check_ffmpeg_available
 from app.core.pipeline_logging import configure_pipeline_logging, log_pipeline_event
 
@@ -116,6 +117,7 @@ async def favicon():
 app.include_router(auth_router)
 app.include_router(static_posts_router)
 app.include_router(faceless_video_router)
+app.include_router(infographics_router)
 app.include_router(presentation_router)
 app.include_router(business_documents_router)
 
