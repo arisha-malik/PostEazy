@@ -1590,10 +1590,13 @@ function renderInfoResults(job) {
     if (script.charts) {
         script.charts.forEach((chart, idx) => {
             box.innerHTML += `
-                <div class="bg-white p-4 rounded-xl border border-charcoal/20 shadow-sm text-center">
-                    ${chart.rendered_image ? `<img src="${chart.rendered_image}" class="w-full rounded-md mb-3 border border-charcoal/10">` : `<p class="text-red-500">Render Failed</p>`}
-                    <h4 class="font-sketch font-bold text-lg mb-1">${chart.title}</h4>
-                    <p class="font-hand text-sm text-charcoal/80 uppercase tracking-widest">${chart.type} Chart</p>
+                <div class="bg-white p-4 rounded-xl border border-charcoal/20 shadow-sm text-center flex flex-col justify-between">
+                    <div>
+                        ${chart.rendered_image ? `<img src="${chart.rendered_image}" class="w-full rounded-md mb-3 border border-charcoal/10">` : `<p class="text-red-500">Render Failed</p>`}
+                        <h4 class="font-sketch font-bold text-lg mb-1">${chart.title}</h4>
+                        <p class="font-hand text-sm text-charcoal/80 uppercase tracking-widest mb-3">${chart.type} Chart</p>
+                    </div>
+                    ${chart.rendered_image ? `<a href="${chart.rendered_image}" download="chart_${idx+1}.png" class="inline-block text-xs px-3 py-1.5 bg-paper-tint border border-charcoal rounded-full hover:bg-terracotta/20 font-bold mt-2">⬇️ Download Chart</a>` : ''}
                 </div>
             `;
         });
